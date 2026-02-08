@@ -1,19 +1,13 @@
 {
   "domain": "bluesky_feed",
   "name": "Bluesky Feed",
-  "codeowners": [
-    "@PersephoneKarnstein"
-  ],
+  "after_dependencies": ["frontend"],
+  "codeowners": ["@PersephoneKarnstein"],
   "config_flow": true,
-  "dependencies": [
-    "http"
-  ],
-  "after_dependencies": [
-    "frontend"
-  ],
+  "dependencies": ["http"],
   "documentation": "https://github.com/PersephoneKarnstein/ha-bluesky-feed",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/PersephoneKarnstein/ha-bluesky-feed/issues",
   "requirements": [],
-  "version": "1.0.0",
-  "issue_tracker": "https://github.com/PersephoneKarnstein/ha-bluesky-feed/issues"
+  "version": "1.0.0"
 }
