@@ -1,0 +1,56 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Bluesky Account",
+        "description": "Enter your Bluesky credentials. Use an App Password from Settings > Privacy and Security > App Passwords.",
+        "data": {
+          "handle": "Handle (e.g. user.bsky.social)",
+          "app_password": "App Password"
+        }
+      },
+      "feed_type": {
+        "title": "Feed Type",
+        "description": "Choose which feed to display.",
+        "data": {
+          "feed_type": "Feed Type"
+        }
+      },
+      "author": {
+        "title": "Author",
+        "description": "Enter the Bluesky handle of the user whose posts you want to see.",
+        "data": {
+          "author_handle": "Bluesky Handle"
+        }
+      },
+      "custom_feed": {
+        "title": "Custom Feed",
+        "description": "Enter the AT URI of the feed generator (e.g. at://did:plc:.../app.bsky.feed.generator/feed-name). You can find this in the feed's URL on bsky.app.",
+        "data": {
+          "feed_uri": "Feed URI"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Configure how often to poll for new posts and how many to fetch.",
+        "data": {
+          "update_interval": "Update interval (seconds)",
+          "post_limit": "Number of posts to fetch"
+        }
+      }
+    },
+    "error": {
+      "auth": "Invalid credentials. Make sure you are using an App Password, not your account password."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "post_limit": "Number of posts to fetch",
+          "update_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  }
+}

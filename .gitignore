@@ -1,0 +1,18 @@
+CLAUDE.md
+.claude
+
+# OS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

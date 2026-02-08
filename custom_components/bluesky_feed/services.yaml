@@ -1,0 +1,83 @@
+like:
+  name: Like a post
+  description: Like a Bluesky post.
+  fields:
+    entity_id:
+      name: Entity
+      description: The Bluesky Feed sensor entity.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+    uri:
+      name: Post URI
+      description: The AT URI of the post to like.
+      required: true
+      selector:
+        text:
+    cid:
+      name: Post CID
+      description: The CID of the post to like.
+      required: true
+      selector:
+        text:
+
+unlike:
+  name: Unlike a post
+  description: Remove a like from a Bluesky post.
+  fields:
+    entity_id:
+      name: Entity
+      description: The Bluesky Feed sensor entity.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+    record_uri:
+      name: Like record URI
+      description: The AT URI of the like record to delete.
+      required: true
+      selector:
+        text:
+
+repost:
+  name: Repost a post
+  description: Repost a Bluesky post.
+  fields:
+    entity_id:
+      name: Entity
+      description: The Bluesky Feed sensor entity.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+    uri:
+      name: Post URI
+      description: The AT URI of the post to repost.
+      required: true
+      selector:
+        text:
+    cid:
+      name: Post CID
+      description: The CID of the post to repost.
+      required: true
+      selector:
+        text:
+
+unrepost:
+  name: Remove a repost
+  description: Remove a repost from a Bluesky post.
+  fields:
+    entity_id:
+      name: Entity
+      description: The Bluesky Feed sensor entity.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+    record_uri:
+      name: Repost record URI
+      description: The AT URI of the repost record to delete.
+      required: true
+      selector:
+        text:

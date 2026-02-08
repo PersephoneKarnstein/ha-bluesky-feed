@@ -1,0 +1,19 @@
+{
+  "domain": "bluesky_feed",
+  "name": "Bluesky Feed",
+  "codeowners": [
+    "@PersephoneKarnstein"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
+  "after_dependencies": [
+    "frontend"
+  ],
+  "documentation": "https://github.com/PersephoneKarnstein/ha-bluesky-feed",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "1.0.0",
+  "issue_tracker": "https://github.com/PersephoneKarnstein/ha-bluesky-feed/issues"
+}
