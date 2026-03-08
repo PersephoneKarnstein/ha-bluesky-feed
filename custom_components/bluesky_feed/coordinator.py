@@ -16,10 +16,11 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import (
     DOMAIN,
-    PDSHOST,
+    DEFAULT_PDSHOST,
     PUBLIC_API_HOST,
     CONF_HANDLE,
     CONF_PASSWORD,
+    CONF_PDSHOST,
     CONF_FEED_TYPE,
     CONF_AUTHOR_HANDLE,
     CONF_FEED_URI,
@@ -43,6 +44,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         """Initialize the coordinator."""
         self._handle = entry.data[CONF_HANDLE]
         self._password = entry.data[CONF_PASSWORD]
+        self._pds_host = entry.data.get(CONF_PDSHOST, DEFAULT_PDSHOST)
         self._feed_type = entry.data.get(CONF_FEED_TYPE, FEED_TYPE_TIMELINE)
         self._author_handle = entry.data.get(CONF_AUTHOR_HANDLE, "")
         self._feed_uri = entry.data.get(CONF_FEED_URI, "")
@@ -68,7 +70,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
     async def _create_session(self) -> None:
         """Create an authenticated session with Bluesky."""
-        url = f"{PDSHOST}/xrpc/com.atproto.server.createSession"
+        url = f"{self._pds_host}/xrpc/com.atproto.server.createSession"
         payload = {"identifier": self._handle, "password": self._password}
 
         async with aiohttp.ClientSession() as session:
@@ -90,7 +92,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             await self._create_session()
             return
 
-        url = f"{PDSHOST}/xrpc/com.atproto.server.refreshSession"
+        url = f"{self._pds_host}/xrpc/com.atproto.server.refreshSession"
         headers = {"Authorization": f"Bearer {self._refresh_jwt}"}
 
         async with aiohttp.ClientSession() as session:
@@ -179,7 +181,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
 
     async def _fetch_timeline(self) -> dict:
         """Fetch the authenticated user's home timeline."""
-        url = f"{PDSHOST}/xrpc/app.bsky.feed.getTimeline"
+        url = f"{self._pds_host}/xrpc/app.bsky.feed.getTimeline"
         return await self._api_get(url, {"limit": self._post_limit})
 
     async def _fetch_author_feed(self) -> dict:
@@ -348,7 +350,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if not self._access_jwt:
             await self._create_session()
 
-        url = f"{PDSHOST}/xrpc/com.atproto.repo.createRecord"
+        url = f"{self._pds_host}/xrpc/com.atproto.repo.createRecord"
         payload = {
             "repo": self._did,
             "collection": "app.bsky.feed.like",
@@ -367,7 +369,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             await self._create_session()
 
         rkey = record_uri.rsplit("/", 1)[-1]
-        url = f"{PDSHOST}/xrpc/com.atproto.repo.deleteRecord"
+        url = f"{self._pds_host}/xrpc/com.atproto.repo.deleteRecord"
         payload = {
             "repo": self._did,
             "collection": "app.bsky.feed.like",
@@ -380,7 +382,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if not self._access_jwt:
             await self._create_session()
 
-        url = f"{PDSHOST}/xrpc/com.atproto.repo.createRecord"
+        url = f"{self._pds_host}/xrpc/com.atproto.repo.createRecord"
         payload = {
             "repo": self._did,
             "collection": "app.bsky.feed.repost",
@@ -399,7 +401,7 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
             await self._create_session()
 
         rkey = record_uri.rsplit("/", 1)[-1]
-        url = f"{PDSHOST}/xrpc/com.atproto.repo.deleteRecord"
+        url = f"{self._pds_host}/xrpc/com.atproto.repo.deleteRecord"
         payload = {
             "repo": self._did,
             "collection": "app.bsky.feed.repost",

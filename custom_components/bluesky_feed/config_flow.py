@@ -13,9 +13,12 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
     DOMAIN,
-    PDSHOST,
+    DEFAULT_PDSHOST,
+    PUBLIC_API_HOST,
+    PLC_DIRECTORY,
     CONF_HANDLE,
     CONF_PASSWORD,
+    CONF_PDSHOST,
     CONF_FEED_TYPE,
     CONF_AUTHOR_HANDLE,
     CONF_FEED_URI,
@@ -29,6 +32,65 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def resolve_pds_for_handle(handle: str) -> str:
+    """Resolve a handle to its PDS endpoint via the AT Protocol identity system.
+
+    1. Resolve handle → DID via public API
+    2. Resolve DID → DID document via PLC directory
+    3. Extract PDS service endpoint from DID document
+
+    Returns the PDS URL, or DEFAULT_PDSHOST if resolution fails.
+    """
+    try:
+        async with aiohttp.ClientSession() as session:
+            # Step 1: resolve handle to DID
+            url = f"{PUBLIC_API_HOST}/xrpc/com.atproto.identity.resolveHandle"
+            async with session.get(url, params={"handle": handle}) as resp:
+                if resp.status != 200:
+                    _LOGGER.debug(
+                        "Handle resolution failed (%s), falling back to default PDS",
+                        resp.status,
+                    )
+                    return DEFAULT_PDSHOST
+                data = await resp.json()
+                did = data.get("did", "")
+
+            if not did:
+                return DEFAULT_PDSHOST
+
+            # Step 2: resolve DID to DID document
+            if did.startswith("did:web:"):
+                # did:web resolution — fetch /.well-known/did.json from the domain
+                domain = did[len("did:web:"):]
+                doc_url = f"https://{domain}/.well-known/did.json"
+            else:
+                # did:plc resolution via PLC directory
+                doc_url = f"{PLC_DIRECTORY}/{did}"
+
+            async with session.get(doc_url) as resp:
+                if resp.status != 200:
+                    _LOGGER.debug(
+                        "DID document fetch failed (%s), falling back to default PDS",
+                        resp.status,
+                    )
+                    return DEFAULT_PDSHOST
+                did_doc = await resp.json()
+
+            # Step 3: extract PDS endpoint from service array
+            for service in did_doc.get("service", []):
+                if service.get("id") == "#atproto_pds":
+                    endpoint = service.get("serviceEndpoint", "")
+                    if endpoint:
+                        return endpoint.rstrip("/")
+
+            _LOGGER.debug("No #atproto_pds service in DID document, falling back to default PDS")
+            return DEFAULT_PDSHOST
+
+    except Exception:
+        _LOGGER.exception("Error resolving PDS for handle %s", handle)
+        return DEFAULT_PDSHOST
 
 
 class BlueskyFeedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -50,9 +112,13 @@ class BlueskyFeedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             handle = user_input[CONF_HANDLE]
             password = user_input[CONF_PASSWORD]
 
-            if await self._validate_credentials(handle, password):
+            # Resolve the user's PDS before attempting auth
+            pds_host = await resolve_pds_for_handle(handle)
+
+            if await self._validate_credentials(handle, password, pds_host):
                 self._data[CONF_HANDLE] = handle
                 self._data[CONF_PASSWORD] = password
+                self._data[CONF_PDSHOST] = pds_host
                 return await self.async_step_feed_type()
             errors["base"] = "auth"
 
@@ -175,10 +241,10 @@ class BlueskyFeedConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return f"Bluesky ({self._data[CONF_HANDLE]})"
 
     async def _validate_credentials(
-        self, handle: str, password: str
+        self, handle: str, password: str, pds_host: str
     ) -> bool:
-        """Validate Bluesky credentials."""
-        url = f"{PDSHOST}/xrpc/com.atproto.server.createSession"
+        """Validate Bluesky credentials against the user's PDS."""
+        url = f"{pds_host}/xrpc/com.atproto.server.createSession"
         payload = {"identifier": handle, "password": password}
 
         try:

@@ -2,11 +2,13 @@
 
 DOMAIN = "bluesky_feed"
 
-PDSHOST = "https://bsky.social"
+DEFAULT_PDSHOST = "https://bsky.social"
 PUBLIC_API_HOST = "https://public.api.bsky.app"
+PLC_DIRECTORY = "https://plc.directory"
 
 CONF_HANDLE = "handle"
 CONF_PASSWORD = "app_password"
+CONF_PDSHOST = "pds_host"
 CONF_FEED_TYPE = "feed_type"
 CONF_AUTHOR_HANDLE = "author_handle"
 CONF_FEED_URI = "feed_uri"
