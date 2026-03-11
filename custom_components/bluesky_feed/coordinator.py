@@ -9,6 +9,7 @@ import aiohttp
 
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
@@ -73,18 +74,18 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         url = f"{self._pds_host}/xrpc/com.atproto.server.createSession"
         payload = {"identifier": self._handle, "password": self._password}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    self._access_jwt = data["accessJwt"]
-                    self._refresh_jwt = data["refreshJwt"]
-                    self._did = data["did"]
-                else:
-                    text = await resp.text()
-                    raise UpdateFailed(
-                        f"Authentication failed ({resp.status}): {text}"
-                    )
+        session = async_get_clientsession(self.hass)
+        async with session.post(url, json=payload) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                self._access_jwt = data["accessJwt"]
+                self._refresh_jwt = data["refreshJwt"]
+                self._did = data["did"]
+            else:
+                text = await resp.text()
+                raise UpdateFailed(
+                    f"Authentication failed ({resp.status}): {text}"
+                )
 
     async def _refresh_session(self) -> None:
         """Refresh the access token."""
@@ -95,14 +96,14 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         url = f"{self._pds_host}/xrpc/com.atproto.server.refreshSession"
         headers = {"Authorization": f"Bearer {self._refresh_jwt}"}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, headers=headers) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    self._access_jwt = data["accessJwt"]
-                    self._refresh_jwt = data["refreshJwt"]
-                else:
-                    await self._create_session()
+        session = async_get_clientsession(self.hass)
+        async with session.post(url, headers=headers) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                self._access_jwt = data["accessJwt"]
+                self._refresh_jwt = data["refreshJwt"]
+            else:
+                await self._create_session()
 
     @staticmethod
     async def _is_token_expired(resp: aiohttp.ClientResponse) -> bool:
@@ -125,27 +126,27 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if auth and self._access_jwt:
             headers["Authorization"] = f"Bearer {self._access_jwt}"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, params=params) as resp:
-                if auth and await self._is_token_expired(resp):
-                    await self._refresh_session()
-                    headers["Authorization"] = f"Bearer {self._access_jwt}"
-                    async with session.get(
-                        url, headers=headers, params=params
-                    ) as retry:
-                        if retry.status == 200:
-                            return await retry.json()
-                        text = await retry.text()
-                        raise UpdateFailed(
-                            f"API request failed ({retry.status}): {text}"
-                        )
-                elif resp.status == 200:
-                    return await resp.json()
-                else:
-                    text = await resp.text()
+        session = async_get_clientsession(self.hass)
+        async with session.get(url, headers=headers, params=params) as resp:
+            if auth and await self._is_token_expired(resp):
+                await self._refresh_session()
+                headers["Authorization"] = f"Bearer {self._access_jwt}"
+                async with session.get(
+                    url, headers=headers, params=params
+                ) as retry:
+                    if retry.status == 200:
+                        return await retry.json()
+                    text = await retry.text()
                     raise UpdateFailed(
-                        f"API request failed ({resp.status}): {text}"
+                        f"API request failed ({retry.status}): {text}"
                     )
+            elif resp.status == 200:
+                return await resp.json()
+            else:
+                text = await resp.text()
+                raise UpdateFailed(
+                    f"API request failed ({resp.status}): {text}"
+                )
 
     async def _api_post(
         self, url: str, payload: dict, auth: bool = True
@@ -155,29 +156,29 @@ class BlueskyFeedCoordinator(DataUpdateCoordinator[list[dict[str, Any]]]):
         if auth and self._access_jwt:
             headers["Authorization"] = f"Bearer {self._access_jwt}"
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url, headers=headers, json=payload
-            ) as resp:
-                if auth and await self._is_token_expired(resp):
-                    await self._refresh_session()
-                    headers["Authorization"] = f"Bearer {self._access_jwt}"
-                    async with session.post(
-                        url, headers=headers, json=payload
-                    ) as retry:
-                        if retry.status == 200:
-                            return await retry.json()
-                        text = await retry.text()
-                        raise UpdateFailed(
-                            f"API POST failed ({retry.status}): {text}"
-                        )
-                elif resp.status == 200:
-                    return await resp.json()
-                else:
-                    text = await resp.text()
+        session = async_get_clientsession(self.hass)
+        async with session.post(
+            url, headers=headers, json=payload
+        ) as resp:
+            if auth and await self._is_token_expired(resp):
+                await self._refresh_session()
+                headers["Authorization"] = f"Bearer {self._access_jwt}"
+                async with session.post(
+                    url, headers=headers, json=payload
+                ) as retry:
+                    if retry.status == 200:
+                        return await retry.json()
+                    text = await retry.text()
                     raise UpdateFailed(
-                        f"API POST failed ({resp.status}): {text}"
+                        f"API POST failed ({retry.status}): {text}"
                     )
+            elif resp.status == 200:
+                return await resp.json()
+            else:
+                text = await resp.text()
+                raise UpdateFailed(
+                    f"API POST failed ({resp.status}): {text}"
+                )
 
     async def _fetch_timeline(self) -> dict:
         """Fetch the authenticated user's home timeline."""
